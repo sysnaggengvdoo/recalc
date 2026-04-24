@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>巻線抵抗計算アプリ</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        h2 { border-bottom: 2px solid #007bff; padding-bottom: 10px; color: #333; margin-top: 0; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
+        .result { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 4px; }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95em; }
+        .judge { font-weight: bold; color: #28a745; }
+        .ng { color: #dc3545; }
+        hr { border: 0; border-top: 1px solid #ccc; margin: 15px 0; }
+        .label-text { color: #555; }
+        .value-text { font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>巻線抵抗 測定</h2>
+    
+    <div class="input-group">
+        <label>U-V (R1) [Ω]</label>
+        <input type="number" id="r1" step="0.0001" placeholder="例: 5.695" oninput="calculate()">
+    </div>
+    <div class="input-group">
+        <label>V-W (R2) [Ω]</label>
+        <input type="number" id="r2" step="0.0001" placeholder="例: 5.674" oninput="calculate()">
+    </div>
+    <div class="input-group">
+        <label>W-U (R3) [Ω]</label>
+        <input type="number" id="r3" step="0.0001" placeholder="例: 5.686" oninput="calculate()">
+    </div>
+
+    <div class="result">
+        <div class="result-item"><span class="label-text">平均値 (Rm):</span> <span id="rm" class="value-text">-</span></div>
+        <div class="result-item"><span class="label-text">不平衡率 (+%):</span> <span id="imbPlus" class="value-text">-</span></div>
+        <div class="result-item"><span class="label-text">不平衡率 (-%):</span> <span id="imbMinus" class="value-text">-</span></div>
+        <hr>
+        <div class="result-item"><span class="label-text">乱巻判定 (±2%):</span> <span id="judge2" class="judge">-</span></div>
+        <div class="result-item"><span class="label-text">型巻判定 (±1%):</span> <span id="judge1" class="judge">-</span></div>
+    </div>
+</div>
+
+<script>
+function calculate() {
+    const r1 = parseFloat(document.getElementById('r1').value);
+    const r2 = parseFloat(document.getElementById('r2').value);
+    const r3 = parseFloat(document.getElementById('r3').value);
+
+    // 要素の取得
+    const elRm = document.getElementById('rm');
+    const elImbPlus = document.getElementById('imbPlus');
+    const elImbMinus = document.getElementById('imbMinus');
+    const elJ2 = document.getElementById('judge2');
+    const elJ1 = document.getElementById('judge1');
+
+    // 3つすべて入力されていない場合はリセット
+    if (isNaN(r1) || isNaN(r2) || isNaN(r3)) {
+        elRm.innerText = "-";
+        elImbPlus.innerText = "-";
+        elImbMinus.innerText = "-";
+        elJ2.innerText = "-";
+        elJ2.className = "judge";
+        elJ1.innerText = "-";
+        elJ1.className = "judge";
+        return;
+    }
+
+    // 1. 平均値の計算
+    const rm = (r1 + r2 + r3) / 3;
+
+    // 2. 最大・最小の取得
+    const values = [r1, r2, r3];
+    const maxVal = Math.max(...values);
+    const minVal = Math.min(...values);
+
+    // 3. 不平衡率の計算（スプレッドシートの式に準拠）
+    const imbPlus = ((maxVal - rm) / rm) * 100;
+    const imbMinus = ((rm - minVal) / rm) * 100;
+    const maxImb = Math.max(imbPlus, imbMinus);
+
+    // 表示の更新
+    elRm.innerText = rm.toFixed(4) + " Ω";
+    elImbPlus.innerText = imbPlus.toFixed(9) + " %";
+    elImbMinus.innerText = imbMinus.toFixed(9) + " %";
+
+    // 4. 判定表示
+    // 乱巻判定 (2%)
+    if (maxImb <= 2) {
+        elJ2.innerText = "正常";
+        elJ2.className = "judge";
+    } else {
+        elJ2.innerText = "異常";
+        elJ2.className = "judge ng";
+    }
+
+    // 型巻判定 (1%)
+    if (maxImb <= 1) {
+        elJ1.innerText = "正常";
+        elJ1.className = "judge";
+    } else {
+        elJ1.innerText = "異常";
+        elJ1.className = "judge ng";
+    }
+}
+</script>
+
+</body>
+</html>
