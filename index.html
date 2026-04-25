@@ -3,238 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>作業進捗 更新アプリ</title>
+    <title>巻線抵抗アンバランス計算v2</title>
     <style>
-        /* 全体のデザイン設定 */
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #eef2f3; margin: 10px; color: #333; }
-        h2 { text-align: center; color: #0056b3; margin-bottom: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
-        
-        /* ★追加：検索ボックス（スクロールしても上部に追従します） */
-        .search-container {
-            position: sticky;
-            top: 0;
-            background-color: #eef2f3;
-            padding: 10px 0;
-            z-index: 100;
-        }
-        .search-container input {
-            width: 100%;
-            padding: 12px;
-            font-size: 1em;
-            border-radius: 8px;
-            border: 2px solid #ced4da;
-            box-sizing: border-box;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        /* ★追加：グループ（部署）ごとの見出し */
-        .group-header {
-            background: #343a40;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 6px;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            font-size: 1.1em;
-            display: flex;
-            justify-content: space-between;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* カードの基本形 */
-        .card { 
-            background: white; 
-            padding: 15px; 
-            margin-bottom: 15px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-            transition: transform 0.2s, box-shadow 0.2s;
-            border-left: 8px solid #adb5bd; 
-        }
-        .card:active { transform: scale(0.98); }
-
-        /* ステータスごとの色分け */
-        .status-working { border-left: 10px solid #fcc419 !important; background-color: #fff9db; }
-        .status-completed { border-left: 10px solid #40c057 !important; background-color: #ebfbee; }
-
-        .card-header { 
-            font-weight: bold; 
-            font-size: 1.15em; 
-            margin-bottom: 8px; 
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        /* 「出」の表示スタイル */
-        .output-tag {
-            background: #e9ecef;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            color: #495057;
-            border: 1px solid #dee2e6;
-        }
-
-        .info { font-size: 0.9em; margin-bottom: 4px; color: #495057; line-height: 1.4; }
-        .control-group { display: flex; gap: 10px; margin-top: 12px; }
-        
-        select { padding: 10px; font-size: 1em; border-radius: 8px; border: 2px solid #ced4da; flex-grow: 1; background: white; }
-        button { padding: 10px 20px; font-size: 1em; border: none; border-radius: 8px; background-color: #007bff; color: white; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        button:hover { background-color: #0056b3; }
-        button:disabled { background-color: #adb5bd; }
-
-        #loading { text-align: center; padding: 40px; color: #666; font-size: 1.2em; }
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        h2 { border-bottom: 2px solid #007bff; padding-bottom: 10px; color: #333; margin-top: 0; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
+        .result { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 4px; }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95em; }
+        .judge { font-weight: bold; color: #28a745; }
+        .ng { color: #dc3545; }
+        hr { border: 0; border-top: 1px solid #ccc; margin: 15px 0; }
+        .label-text { color: #555; }
+        .value-text { font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h2>🛠️ 現場用 進捗更新ツール</h2>
+<div class="card">
+    <h2>巻線抵抗 測定</h2>
     
-    <div class="search-container">
-        <input type="text" id="searchInput" placeholder="🔍 整理№、顧客名、担当で検索..." oninput="renderData()">
+    <div class="input-group">
+        <label>U-V (R1) [Ω]</label>
+        <input type="number" id="r1" step="0.0001" placeholder="値の入力" oninput="calculate()">
+    </div>
+    <div class="input-group">
+        <label>V-W (R2) [Ω]</label>
+        <input type="number" id="r2" step="0.0001" placeholder="値の入力" oninput="calculate()">
+    </div>
+    <div class="input-group">
+        <label>W-U (R3) [Ω]</label>
+        <input type="number" id="r3" step="0.0001" placeholder="値の入力" oninput="calculate()">
     </div>
 
-    <div id="loading">指示書データを読み込み中...</div>
-    <div id="appContainer"></div>
+    <div class="result">
+        <div class="result-item"><span class="label-text">平均値 (Rm):</span> <span id="rm" class="value-text">-</span></div>
+        <div class="result-item"><span class="label-text">不平衡率 (+%):</span> <span id="imbPlus" class="value-text">-</span></div>
+        <div class="result-item"><span class="label-text">不平衡率 (-%):</span> <span id="imbMinus" class="value-text">-</span></div>
+        <hr>
+        <div class="result-item"><span class="label-text">乱巻判定 (±2%):</span> <span id="judge2" class="judge">-</span></div>
+        <div class="result-item"><span class="label-text">型巻判定 (±1%):</span> <span id="judge1" class="judge">-</span></div>
+    </div>
+</div>
 
 <script>
-    // ★GASのウェブアプリURLをここに貼り付けてください★
-    const gasUrl = "https://script.google.com/macros/s/AKfycbxj-tIVJTXqGLYtQQoFC_Q-Ru3eys8VRpDpZhSK8OePAfbPq5Ht1ZjAqM3RMe_VX5TV/exec";
+function calculate() {
+    const r1 = parseFloat(document.getElementById('r1').value);
+    const r2 = parseFloat(document.getElementById('r2').value);
+    const r3 = parseFloat(document.getElementById('r3').value);
 
-    // 読み込んだデータを保管しておくための箱
-    let globalData = [];
+    // 要素の取得
+    const elRm = document.getElementById('rm');
+    const elImbPlus = document.getElementById('imbPlus');
+    const elImbMinus = document.getElementById('imbMinus');
+    const elJ2 = document.getElementById('judge2');
+    const elJ1 = document.getElementById('judge1');
 
-    // ★重要：グループ分けの基準となるスプレッドシートの列名
-    // ※シートの列名が「部署」でない場合（「グループ」や「区分」など）はここを書き換えてください。
-    const groupColumnName = "部署"; 
-
-    // 初回に1回だけGASからデータを読み込む
-    async function loadData() {
-        try {
-            const response = await fetch(gasUrl);
-            globalData = await response.json();
-            document.getElementById('loading').style.display = 'none';
-            renderData(); // 描画処理へ
-        } catch (error) {
-            document.getElementById('loading').innerText = "データの読み込みに失敗しました。";
-        }
+    // 3つすべて入力されていない場合はリセット
+    if (isNaN(r1) || isNaN(r2) || isNaN(r3)) {
+        elRm.innerText = "-";
+        elImbPlus.innerText = "-";
+        elImbMinus.innerText = "-";
+        elJ2.innerText = "-";
+        elJ2.className = "judge";
+        elJ1.innerText = "-";
+        elJ1.className = "judge";
+        return;
     }
 
-    // データを画面に並べる（検索とグループ分けに対応）
-    function renderData() {
-        const container = document.getElementById('appContainer');
-        container.innerHTML = '';
+    // 1. 平均値の計算
+    const rm = (r1 + r2 + r3) / 3;
 
-        // 検索ボックスに入力された文字を取得（小文字に変換して比較しやすくする）
-        const searchWord = document.getElementById('searchInput').value.toLowerCase();
+    // 2. 最大・最小の取得
+    const values = [r1, r2, r3];
+    const maxVal = Math.max(...values);
+    const minVal = Math.min(...values);
 
-        // 1. 検索ワードでデータを絞り込む
-        const filteredData = globalData.filter(row => {
-            if(!row["整理№"]) return false;
-            
-            // 整理№、顧客名、担当のどこかに文字が含まれていれば残す
-            const matchId = String(row["整理№"] || "").toLowerCase().includes(searchWord);
-            const matchName = String(row["顧客名"] || "").toLowerCase().includes(searchWord);
-            const matchPerson = String(row["担当"] || "").toLowerCase().includes(searchWord);
-            
-            return matchId || matchName || matchPerson;
-        });
+    // 3. 不平衡率の計算（スプレッドシートの式に準拠）
+    const imbPlus = ((maxVal - rm) / rm) * 100;
+    const imbMinus = ((rm - minVal) / rm) * 100;
+    const maxImb = Math.max(imbPlus, imbMinus);
 
-        // 2. 絞り込んだデータを「部署」ごとに振り分ける
-        const groupedData = {};
-        filteredData.forEach(row => {
-            // 部署の入力がない場合は「その他（部署未定）」にまとめる
-            const groupName = row[groupColumnName] || "その他（部署未定）";
-            
-            if (!groupedData[groupName]) {
-                groupedData[groupName] = [];
-            }
-            groupedData[groupName].push(row);
-        });
+    // 表示の更新
+    elRm.innerText = rm.toFixed(4) + " Ω";
+    elImbPlus.innerText = imbPlus.toFixed(5) + " %";
+    elImbMinus.innerText = imbMinus.toFixed(5) + " %";
 
-        // 3. グループごとに見出しとカードを作る
-        for (const [groupName, rows] of Object.entries(groupedData)) {
-            // そのグループに表示するデータが0件ならスキップ
-            if (rows.length === 0) continue;
-
-            // グループ見出しの作成
-            const headerObj = document.createElement('div');
-            headerObj.className = 'group-header';
-            headerObj.innerHTML = `<span>📁 ${groupName}</span> <span>${rows.length}件</span>`;
-            container.appendChild(headerObj);
-
-            // そのグループのカードを作成
-            rows.forEach(row => {
-                let statusClass = "";
-                if (row["完了確認"] === "作業中") statusClass = "status-working";
-                if (row["完了確認"] === "完了") statusClass = "status-completed";
-
-                const div = document.createElement('div');
-                div.className = `card ${statusClass}`;
-                
-                const outputDisplay = row["出"] ? `<span class="output-tag">出力: ${row["出"]}</span>` : "";
-
-                div.innerHTML = `
-                    <div class="card-header">
-                        <span>${row["整理№"]}：${row["顧客名"] || "-"}</span>
-                        ${outputDisplay}
-                    </div>
-                    <div class="info"><strong>作業内容:</strong> ${row["作業内容"] || "-"}</div>
-                    <div class="info"><strong>担当:</strong> ${row["担当"] || "未定"} | <strong>次工程:</strong> ${row["次工程"] || "-"}</div>
-                    <div class="control-group">
-                        <select id="status-${row["整理№"]}">
-                            <option value="" ${!row["完了確認"] ? "selected" : ""}>未着手</option>
-                            <option value="作業中" ${row["完了確認"] === "作業中" ? "selected" : ""}>作業中</option>
-                            <option value="完了" ${row["完了確認"] === "完了" ? "selected" : ""}>完了</option>
-                        </select>
-                        <button id="btn-${row["整理№"]}" onclick="updateStatus('${row["整理№"]}')">更新</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        // 検索結果が0件の場合のメッセージ
-        if (filteredData.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">一致する指示書がありません</div>';
-        }
+    // 4. 判定表示
+    // 乱巻判定 (2%)
+    if (maxImb <= 2) {
+        elJ2.innerText = "正常";
+        elJ2.className = "judge";
+    } else {
+        elJ2.innerText = "異常";
+        elJ2.className = "judge ng";
     }
 
-    // 更新処理（変更なし）
-    async function updateStatus(id) {
-        const newStatus = document.getElementById(`status-${id}`).value;
-        const btn = document.getElementById(`btn-${id}`);
-        
-        btn.innerText = "更新中...";
-        btn.disabled = true;
-
-        try {
-            const response = await fetch(gasUrl, {
-                method: 'POST',
-                redirect: 'follow', 
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ id: id, status: newStatus })
-            });
-
-            const result = await response.json();
-            if(result.success) {
-                // 更新成功後は、もう一度GASから最新データを読み込み直す
-                document.getElementById('loading').style.display = 'block';
-                loadData();
-            } else {
-                alert("更新失敗: " + result.error);
-                btn.innerText = "更新";
-                btn.disabled = false;
-            }
-        } catch (error) {
-            alert("通信エラーが発生しました。");
-            btn.innerText = "更新";
-            btn.disabled = false;
-        }
+    // 型巻判定 (1%)
+    if (maxImb <= 1) {
+        elJ1.innerText = "正常";
+        elJ1.className = "judge";
+    } else {
+        elJ1.innerText = "異常";
+        elJ1.className = "judge ng";
     }
-
-    window.onload = loadData;
+}
 </script>
 
 </body>
